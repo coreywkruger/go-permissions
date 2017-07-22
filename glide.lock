@@ -1,0 +1,6 @@
+hash: 614a48f3d30f5c26a0181b1587068df16e6ada90ded0d19a0c45ba7da1e362a5
+updated: 2017-07-21T14:53:06.108356879Z
+imports:
+- name: github.com/jmoiron/sqlx
+  version: d9bd385d68c068f1fabb5057e3dedcbcbb039d0f
+testImports: []
