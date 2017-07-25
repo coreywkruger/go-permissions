@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"permissionist"
+	// "permissionist"
 )
 
 func main(){
-	db, err := permissionist.InitDB("blah")
+	db, err := InitDB(DbConfig{"db", "db", "db", "db", "5432"})
 	if err != nil {
 		fmt.Println(err)
 	}
-	P := permissionist.Permissionist{
+	P := Permissionist{
 		DB: db,
 	}
 	fmt.Println(P)

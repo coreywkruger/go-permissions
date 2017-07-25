@@ -1,4 +1,4 @@
 package: ""
 import:
 - package: github.com/jmoiron/sqlx
-# - package: github.com/coreywkruger/permissionist
+- package: github.com/lib/pq
