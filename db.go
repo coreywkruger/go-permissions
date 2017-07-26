@@ -7,25 +7,35 @@ import (
 )
 
 var schema = `
+CREATE TABLE IF NOT EXISTS apps (
+	id UUID PRIMARY KEY
+);
+
+CREATE TABLE IF NOT EXISTS roles (
+	id UUID PRIMARY KEY,
+	app_id UUID NOT NULL REFERENCES apps,
+	name VARCHAR(60) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS permissions (
-	id uuid PRIMARY KEY,
-	app_id uuid,
-	name varchar(60),
-	owner_id uuid
+	id UUID PRIMARY KEY,
+	app_id UUID NOT NULL REFERENCES apps,
+	name VARCHAR(60) NOT NULL,
+	entity_id UUID NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS role_permissions (
-	id uuid PRIMARY KEY,
-	app_id uuid,
-	permission_id uuid,
-	owner_id uuid
+	id UUID PRIMARY KEY,
+	app_id UUID NOT NULL REFERENCES apps,
+	permission_id UUID NOT NULL,
+	entity_id UUID NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS entity_roles (
-	id uuid PRIMARY KEY,
-	app_id uuid,
-	entity_id uuid,
-	role_id uuid
+	id UUID PRIMARY KEY,
+	app_id UUID NOT NULL REFERENCES apps,
+	entity_id UUID NOT NULL,
+	role_id UUID NOT NULL
 );
 `
 
