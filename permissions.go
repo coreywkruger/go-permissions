@@ -40,7 +40,7 @@ func (permissions *Permissionist) Allowed(entityID string, appID string, permiss
 	return true, nil
 }
 
-// getPermissions returns a list of all permissions that belong to an entity
+// GetPermissions returns a list of all permissions that belong to an entity
 func (permissions *Permissionist) GetPermissions(entityID string, appID string) ([]string, error) {
 	var perms []string
 	err := permissions.DB.Select(&perms, `
@@ -61,7 +61,7 @@ func (permissions *Permissionist) GetPermissions(entityID string, appID string) 
 // GetRoles returns a list of all roles created for an app
 func (permissions *Permissionist) GetRoles(appID string) ([]string, error) {
 	var roleIDs []string
-	err := permissions.DB.Select(roleIDs, `
+	err := permissions.DB.Select(&roleIDs, `
 	select id from roles where app_id = $1;
 	`, appID)
 

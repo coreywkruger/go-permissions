@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
 	"log"
@@ -24,7 +23,7 @@ func main() {
 
 	db, err := InitDB(dbconfig)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 	P := Permissionist{
 		DB: db,
@@ -35,6 +34,7 @@ func main() {
 	router.HandleFunc("/apps", func(w http.ResponseWriter, r *http.Request) {
 		id, err := P.CreateApp()
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(500)
 			w.Write([]byte("Could not create app"))
 			return
@@ -46,14 +46,16 @@ func main() {
 	router.HandleFunc("/roles/{appID}", func(w http.ResponseWriter, r *http.Request) {
 		roleIDs, err := P.GetRoles(mux.Vars(r)["appID"])
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(500)
-			w.Write([]byte("Could not create app"))
+			w.Write([]byte("Could not get roles"))
 			return
 		}
 		bytes, err := json.Marshal(roleIDs)
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(500)
-			w.Write([]byte("Could not create app"))
+			w.Write([]byte("Could not get roles"))
 			return
 		}
 		w.WriteHeader(200)
@@ -64,6 +66,7 @@ func main() {
 		body := NewBody(w, r)
 		id, err := P.CreateRole(body.GetField("role_name"), mux.Vars(r)["appID"])
 		if err != nil {
+			log.Println(err)
 			w.WriteHeader(500)
 			w.Write([]byte("Could not create role"))
 			return
