@@ -13,7 +13,7 @@ type RolePermissions struct {
 	PermissionID string `json:"permission_id" db:"permission_id"`
 }
 
-// Permissions stuff
+// Permissionist owns permissions crud
 type Permissionist struct {
 	DB *sqlx.DB
 }
@@ -38,6 +38,28 @@ func (permissions *Permissionist) Allowed(entityID string, appID string, permiss
 	}
 
 	return true, nil
+}
+
+// GetApps returns a list of all apps
+func (permissions *Permissionist) GetApps() ([]string, error) {
+	var apps []string
+	err := permissions.DB.Select(&apps, `select id from apps;`)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get apps: %s", err.Error())
+	}
+
+	return apps, nil
+}
+
+// GetApp returns an app by id
+func (permissions *Permissionist) GetApp(appID string) (string, error) {
+	var id string
+	err := permissions.DB.Select(&id, `select id from apps where id = $1;`, appID)
+	if err != nil {
+		return "", fmt.Errorf("Could not get app: %s", err.Error())
+	}
+
+	return id, nil
 }
 
 // GetPermissions returns a list of all permissions that belong to an entity
