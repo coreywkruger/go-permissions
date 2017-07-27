@@ -21,8 +21,8 @@ type Permissionist struct {
 // Allowed checks if entity entityID has permission permissionName
 func (permissions *Permissionist) Allowed(entityID string, appID string, permissionName string) (bool, error) {
 	var rolePermissions []RolePermissions
-	err := permissions.DB.Select(&rolePermissions, 
-	`select * from role_permissions as rp 
+	err := permissions.DB.Select(&rolePermissions,
+		`select * from role_permissions as rp 
 		inner join permissions as p 
 	on rp.permission_id = p.id and rp.app_id = $2 and p.name = $3
 		inner join entity_roles as er 
@@ -41,7 +41,7 @@ func (permissions *Permissionist) Allowed(entityID string, appID string, permiss
 }
 
 // getPermissions returns a list of all permissions that belong to an entity
-func (permissions *Permissionist) getPermissions(entityID string, appID string) ([]string, error) {
+func (permissions *Permissionist) GetPermissions(entityID string, appID string) ([]string, error) {
 	var perms []string
 	err := permissions.DB.Select(&perms, `
 	select name from permissions as p 
@@ -56,6 +56,20 @@ func (permissions *Permissionist) getPermissions(entityID string, appID string) 
 	}
 
 	return perms, nil
+}
+
+// GetRoles returns a list of all roles created for an app
+func (permissions *Permissionist) GetRoles(appID string) ([]string, error) {
+	var roleIDs []string
+	err := permissions.DB.Select(roleIDs, `
+	select id from roles where app_id = $1;
+	`, appID)
+
+	if err != nil {
+		return nil, fmt.Errorf("Could not get roles: %s", err.Error())
+	}
+
+	return roleIDs, nil
 }
 
 // AssignRoleToEntity assigns role roleName to entity entityID
@@ -90,6 +104,22 @@ func (permissions *Permissionist) AssignPermissionToRole(roleName string, appID 
 	return id, nil
 }
 
+// CreateApp creates a new app in the database
+func (permissions *Permissionist) CreateApp() (string, error) {
+	var id string
+	err := permissions.DB.QueryRow(`
+	insert into apps (id) values (
+		$1
+	) returning id;
+	`, uuid.NewV4().String()).Scan(&id)
+
+	if err != nil {
+		return "", fmt.Errorf("Could not create a new app: %s", err.Error())
+	}
+
+	return id, nil
+}
+
 // CreatePermission creates a new permission in the database
 func (permissions *Permissionist) CreatePermission(permissionName string, appID string) (string, error) {
 	var id string
@@ -107,7 +137,7 @@ func (permissions *Permissionist) CreatePermission(permissionName string, appID 
 }
 
 // CreateRole creates a new role in the database
-func (permissions *Permissionist) CreateRole(roleName string, appID string) (interface{}, error) {
+func (permissions *Permissionist) CreateRole(roleName string, appID string) (string, error) {
 	var id string
 	err := permissions.DB.QueryRow(`
 	insert into roles (id, name, app_id) values (

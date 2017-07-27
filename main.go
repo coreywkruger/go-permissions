@@ -1,17 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
-	"net/http"
-	"io/ioutil"
-	"os"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
-	"github.com/Jeffail/gabs"
+	"log"
+	"net/http"
+	"os"
 )
 
-func main(){
+func main() {
 
 	config := viper.New()
 	config.SetConfigFile(os.Getenv("CONFIG"))
@@ -32,51 +31,46 @@ func main(){
 	}
 
 	router := mux.NewRouter()
-	router.HandleFunc("/roles/{appID}", func (w http.ResponseWriter, r *http.Request) {
-		fmt.Println("getting roles for app")
-	}).Methods("GET")
 
-	router.HandleFunc("/roles/{appID}", func (w http.ResponseWriter, r *http.Request) {
-
-		bodyBytes, err := ioutil.ReadAll(r.Body)
+	router.HandleFunc("/apps", func(w http.ResponseWriter, r *http.Request) {
+		id, err := P.CreateApp()
 		if err != nil {
-			fmt.Println(err)
 			w.WriteHeader(500)
-			w.Write([]byte("Could not create role"))
+			w.Write([]byte("Could not create app"))
 			return
 		}
-		defer r.Body.Close()
-
-		body, err := gabs.ParseJSON(bodyBytes)
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(500)
-			w.Write([]byte("Could not create role"))
-			return
-		}
-
-		roleName, ok := body.Path("role_name").Data().(string)
-		if ok != true {
-			w.WriteHeader(500)
-			w.Write([]byte("Could not create role"))
-			return
-		}
-
-		id, err := P.CreateRole(roleName, mux.Vars(r)["appID"])
-		if err != nil {
-			fmt.Println(err)
-			w.WriteHeader(500)
-			w.Write([]byte("Could not create role"))
-			return
-		}
-
 		w.WriteHeader(200)
 		w.Write([]byte(id))
 	}).Methods("POST")
 
-	router.HandleFunc("/roles/create", func (w http.ResponseWriter, r *http.Request) {
-		fmt.Println("creating role")
-	})
+	router.HandleFunc("/roles/{appID}", func(w http.ResponseWriter, r *http.Request) {
+		roleIDs, err := P.GetRoles(mux.Vars(r)["appID"])
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("Could not create app"))
+			return
+		}
+		bytes, err := json.Marshal(roleIDs)
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("Could not create app"))
+			return
+		}
+		w.WriteHeader(200)
+		w.Write(bytes)
+	}).Methods("GET")
+
+	router.HandleFunc("/roles/{appID}", func(w http.ResponseWriter, r *http.Request) {
+		body := NewBody(w, r)
+		id, err := P.CreateRole(body.GetField("role_name"), mux.Vars(r)["appID"])
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("Could not create role"))
+			return
+		}
+		w.WriteHeader(200)
+		w.Write([]byte(id))
+	}).Methods("POST")
 
 	http.ListenAndServe(":8000", router)
 }
