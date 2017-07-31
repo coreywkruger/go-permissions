@@ -1,0 +1,31 @@
+CREATE TABLE IF NOT EXISTS apps (
+	id UUID PRIMARY KEY
+    name VARCHAR(60) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS roles (
+	id UUID PRIMARY KEY,
+	app_id UUID NOT NULL REFERENCES apps,
+	name VARCHAR(60) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS permissions (
+	id UUID PRIMARY KEY,
+	app_id UUID NOT NULL REFERENCES apps,
+	name VARCHAR(60) NOT NULL,
+	entity_id UUID NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS role_permissions (
+	id UUID PRIMARY KEY,
+	app_id UUID NOT NULL REFERENCES apps,
+	permission_id UUID NOT NULL,
+	entity_id UUID NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS entity_roles (
+	id UUID PRIMARY KEY,
+	app_id UUID NOT NULL REFERENCES apps,
+	entity_id UUID NOT NULL,
+	role_id UUID NOT NULL
+);
