@@ -42,11 +42,15 @@ type Permissionist struct {
 func (permissions *Permissionist) Allowed(entityID string, appID string, permissionID string) (bool, error) {
 	var rolePermissions []RolePermission
 	err := permissions.DB.Select(&rolePermissions, `
-		select * from role_permissions as rp 
-			inner join permissions as p 
-		on rp.permission_id = p.id and rp.app_id = $2 and p.id = $3
-			inner join entity_roles as er 
-		on er.app_id = $2 and er.entity_id = $1;
+	SELECT *
+	FROM role_permissions AS rp
+	INNER JOIN permissions AS p
+		ON rp.permission_id = p.id
+			AND rp.app_id = $2
+			AND p.id = $3
+	INNER JOIN entity_roles AS er
+		ON er.app_id = $2
+			AND er.entity_id = $1;
 	`, entityID, appID, permissionID)
 
 	if err != nil {
@@ -75,9 +79,11 @@ func (permissions *Permissionist) GetApps() ([]string, error) {
 func (permissions *Permissionist) GetAppsByEntityID(entityID string) ([]string, error) {
 	var apps []string
 	err := permissions.DB.Select(&apps, `
-	select id from apps as a 
-	inner join entity_roles as er 
-		on a.id = er.app_id and er.id = $1;
+	SELECT id
+	FROM apps AS a
+	INNER JOIN entity_roles AS er
+		ON a.id = er.app_id
+			AND er.id = $1;
 	`, entityID)
 
 	if err != nil {
@@ -90,7 +96,11 @@ func (permissions *Permissionist) GetAppsByEntityID(entityID string) ([]string, 
 // GetApp returns an app by id
 func (permissions *Permissionist) GetApp(appID string) (string, error) {
 	var id string
-	err := permissions.DB.Select(&id, `select id from apps where id = $1;`, appID)
+	err := permissions.DB.Select(&id, `
+	SELECT id
+	FROM apps
+	WHERE id = $1;
+	`, appID)
 	if err != nil {
 		return "", fmt.Errorf("Could not get app: %s", err.Error())
 	}
@@ -102,11 +112,15 @@ func (permissions *Permissionist) GetApp(appID string) (string, error) {
 func (permissions *Permissionist) GetPermissionsByEntityID(entityID string, appID string) ([]Permission, error) {
 	var perms []Permission
 	err := permissions.DB.Select(&perms, `
-	select * from permissions as p 
-	inner join role_permissions as rp 
-		on p.id = rp.permission_id and p.app_id = $2 and rp.app_id = $2
-	inner join entity_roles as er 
-		on er.entity_id = $1 and er.app_id = $2;
+	SELECT *
+	FROM permissions AS p
+	INNER JOIN role_permissions AS rp
+		ON p.id = rp.permission_id
+			AND p.app_id = $2
+			AND rp.app_id = $2
+	INNER JOIN entity_roles AS er
+		ON er.entity_id = $1
+			AND er.app_id = $2;
 	`, entityID, appID)
 
 	if err != nil {
@@ -120,9 +134,13 @@ func (permissions *Permissionist) GetPermissionsByEntityID(entityID string, appI
 func (permissions *Permissionist) GetPermissionsByRole(roleID string, appID string) ([]Permission, error) {
 	var perms []Permission
 	err := permissions.DB.Select(&perms, `
-	select * from permissions as p 
-	inner join role_permissions as rp 
-		on p.id = rp.permission_id and rp.role_id = $1 and p.app_id = $2 and rp.app_id = $2
+	SELECT *
+	FROM permissions AS p
+	INNER JOIN role_permissions AS rp
+		ON p.id = rp.permission_id
+			AND rp.role_id = $1
+			AND p.app_id = $2
+			AND rp.app_id = $2
 	`, roleID, appID)
 
 	if err != nil {
@@ -136,7 +154,9 @@ func (permissions *Permissionist) GetPermissionsByRole(roleID string, appID stri
 func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
 	var roleIDs []Role
 	err := permissions.DB.Select(&roleIDs, `
-	select * from roles where app_id = $1;
+	SELECT *
+	FROM roles
+	WHERE app_id = $1;
 	`, appID)
 
 	if err != nil {
@@ -150,7 +170,10 @@ func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
 func (permissions *Permissionist) GetRoleByID(roleID string, appID string) (Role, error) {
 	var role Role
 	err := permissions.DB.Select(&role, `
-	select * from roles where id = $1 and app_id = $2 limit 1;
+	SELECT *
+	FROM roles
+	WHERE id = $1
+			AND app_id = $2 limit 1;
 	`, roleID, appID)
 
 	if err != nil {
@@ -164,9 +187,9 @@ func (permissions *Permissionist) GetRoleByID(roleID string, appID string) (Role
 func (permissions *Permissionist) AssignRoleToEntity(entityID string, appID string, roleID string) (string, error) {
 	var id string
 	err := permissions.DB.QueryRow(`
-	insert into entity_roles (id, entity_id, app_id, role_id) values (
-		$1, $2, $3, (select id from roles where id = $4)
-	) returning id;
+	INSERT INTO entity_roles (id, entity_id, app_id, role_id) VALUES ( 
+		$1, $2, $3, $4 
+	) RETURNING id;
 	`, uuid.NewV4().String(), entityID, appID, roleID).Scan(&id)
 
 	if err != nil {
@@ -180,9 +203,9 @@ func (permissions *Permissionist) AssignRoleToEntity(entityID string, appID stri
 func (permissions *Permissionist) GrantPermissionToRole(roleID string, appID string, permissionID string) error {
 	var id string
 	err := permissions.DB.QueryRow(`
-	insert into role_permissions (id, role_id, app_id, permission_id) values (
+	INSERT INTO role_permissions (id, role_id, app_id, permission_id) VALUES (
 		$1, $2, $3, $4
-	) returning id;
+	) RETURNING id;
 	`, uuid.NewV4().String(), roleID, appID, permissionID).Scan(&id)
 
 	if err != nil {
@@ -196,9 +219,9 @@ func (permissions *Permissionist) GrantPermissionToRole(roleID string, appID str
 func (permissions *Permissionist) CreateApp(name string) (*App, error) {
 	var app App
 	err := permissions.DB.QueryRow(`
-	insert into apps (id, name) values (
+	INSERT INTO apps (id, name) VALUES (
 		$1, $2
-	) returning *;
+	) RETURNING *;
 	`, uuid.NewV4().String(), name).Scan(&app.ID, &app.Name)
 
 	if err != nil {
@@ -212,9 +235,9 @@ func (permissions *Permissionist) CreateApp(name string) (*App, error) {
 func (permissions *Permissionist) CreatePermission(permissionName string, appID string) (*Permission, error) {
 	var p Permission
 	err := permissions.DB.QueryRow(`
-	insert into permissions (id, name, app_id) values (
+	INSERT INTO permissions (id, name, app_id) VALUES (
 		$1, $2, $3
-	) returning *;
+	) RETURNING *;
 	`, uuid.NewV4().String(), permissionName, appID).Scan(&p.ID, &p.Name, &p.AppID)
 
 	if err != nil {
@@ -228,9 +251,9 @@ func (permissions *Permissionist) CreatePermission(permissionName string, appID 
 func (permissions *Permissionist) CreateRole(roleName string, appID string) (*Role, error) {
 	var role Role
 	err := permissions.DB.QueryRow(`
-	insert into roles (id, name, app_id) values (
+	INSERT INTO roles (id, name, app_id) VALUES (
 		$1, $2, $3
-	) returning *;
+	) RETURNING *;
 	`, uuid.NewV4().String(), roleName, appID).Scan(&role.ID, &role.Name, &role.AppID)
 
 	if err != nil {
