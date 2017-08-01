@@ -181,8 +181,8 @@ func (permissions *Permissionist) GrantPermissionToRole(roleID string, appID str
 	var id string
 	err := permissions.DB.QueryRow(`
 	insert into role_permissions (id, role_id, app_id, permission_id) values (
-		$1, (select id from roles where id = $2), $3, (select id from permissions where id = $4)
-	);
+		$1, $2, $3, $4
+	) returning id;
 	`, uuid.NewV4().String(), roleID, appID, permissionID).Scan(&id)
 
 	if err != nil {

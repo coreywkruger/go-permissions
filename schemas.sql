@@ -18,13 +18,13 @@ CREATE TABLE IF NOT EXISTS permissions (
 CREATE TABLE IF NOT EXISTS role_permissions (
 	id UUID PRIMARY KEY,
 	app_id UUID NOT NULL REFERENCES apps,
-	permission_id UUID NOT NULL,
-	role_id UUID NOT NULL
+	permission_id UUID NOT NULL REFERENCES permissions,
+	role_id UUID NOT NULL REFERENCES roles
 );
 
 CREATE TABLE IF NOT EXISTS entity_roles (
 	id UUID PRIMARY KEY,
 	app_id UUID NOT NULL REFERENCES apps,
-	entity_id UUID NOT NULL,
-	role_id UUID NOT NULL
+	role_id UUID NOT NULL REFERENCES roles,
+	entity_id UUID NOT NULL
 );
