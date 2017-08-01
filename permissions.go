@@ -108,7 +108,7 @@ func (permissions *Permissionist) GetPermissionsByEntityID(entityID string, appI
 	return perms, nil
 }
 
-// GetPermissionsByRoleID returns a list of all permissions that belong to an entity
+// GetPermissionsByRole returns a list of all permissions that belong to an entity
 func (permissions *Permissionist) GetPermissionsByRole(roleID string, appID string) ([]Permission, error) {
 	var perms []Permission
 	err := permissions.DB.Select(&perms, `
@@ -140,16 +140,16 @@ func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
 
 // GetRoleByID returns a role name
 func (permissions *Permissionist) GetRoleByID(roleID string, appID string) (Role, error) {
-	var name Role
-	err := permissions.DB.Select(&name, `
+	var role Role
+	err := permissions.DB.Select(&role, `
 	select * from roles where id = $1 and app_id = $2 limit 1;
 	`, roleID, appID)
 
 	if err != nil {
-		return "", fmt.Errorf("Could not get role: %s", err.Error())
+		return role, fmt.Errorf("Could not get role: %s", err.Error())
 	}
 
-	return name, nil
+	return role, nil
 }
 
 // AssignRoleToEntity assigns role roleID to entity entityID
@@ -157,7 +157,7 @@ func (permissions *Permissionist) AssignRoleToEntity(entityID string, appID stri
 	var id string
 	err := permissions.DB.QueryRow(`
 	insert into entity_roles (id, entity_id, app_id, role_id) values (
-		$1, $2, $3, (select id from roles where id = $3)
+		$1, $2, $3, (select id from roles where id = $4)
 	) returning id;
 	`, uuid.NewV4().String(), entityID, appID, roleID).Scan(&id)
 

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"io/ioutil"
 )
 
 // DbConfig db info
@@ -26,17 +25,6 @@ func InitDB(config DbConfig) (*sqlx.DB, error) {
 		" sslmode=disable",
 		" port=", config.Port,
 	))
-	if err != nil {
-		return nil, err
-	}
-
-	schemas, err := ioutil.ReadFile("schemas.sql")
-	if err != nil {
-		return nil, err
-	}
-
-	// Create schema
-	_, err = db.Exec(string(schemas))
 	if err != nil {
 		return nil, err
 	}

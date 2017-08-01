@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -167,6 +168,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	schemas, err := ioutil.ReadFile("schemas.sql")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Create schema
+	_, err = db.Exec(string(schemas))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	P := Permissionist{
 		DB: db,
 	}
