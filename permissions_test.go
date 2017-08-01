@@ -3,12 +3,14 @@ package main
 import (
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"log"
 	"os"
 	"testing"
 )
 
-var db *sqlx.DB
+var DB *sqlx.DB
+var P Permissionist
 
 func TestMain(m *testing.M) {
 	config := viper.New()
@@ -18,22 +20,16 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	var dbconfig DbConfig
-	config.UnmarshalKey("database", &dbconfig)
+	var dbConfig DbConfig
+	config.UnmarshalKey("database", &dbConfig)
 
-	db, err = InitDB(dbconfig)
+	DB, err = InitDB(dbConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = db.Exec(`
-		drop table if exists apps cascade;
-		drop table if exists permissions cascade;
-		drop table if exists role_permissions cascade;
-		drop table if exists roles cascade;
-		drop table if exists entity_roles cascade;
-	`)
-	if err != nil {
-		log.Fatal(err)
+
+	P = Permissionist{
+		DB: DB,
 	}
 
 	exitVal := m.Run()
@@ -42,19 +38,48 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreatePermission(t *testing.T) {
-	err := cleanup(db)
+	err := cleanup(DB)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	app, err := P.CreateApp("Taco App")
+	if err != nil {
+		t.Errorf("Error: %s", err.Error())
+	}
+	role, err := P.CreateRole("Taco Role", app.ID)
+	if err != nil {
+		t.Errorf("Error: %s", err.Error())
+	}
+	permission, err := P.CreatePermission("Taco Permission", app.ID)
+	if err != nil {
+		t.Errorf("Error: %s", err.Error())
+	}
+	err = P.GrantPermissionToRole(role.ID, app.ID, permission.ID)
+	if err != nil {
+		t.Errorf("Error: %s", err.Error())
+	}
 }
 
-func cleanup(database *sqlx.DB) error {
-	_, err := database.Exec(`
+func cleanup(db *sqlx.DB) error {
+	_, err := db.Exec(`
 		drop table if exists apps cascade;
 		drop table if exists permissions cascade;
 		drop table if exists role_permissions cascade;
 		drop table if exists roles cascade;
 		drop table if exists entity_roles cascade;
 	`)
+
+	schemas, err := ioutil.ReadFile("schemas.sql")
+	if err != nil {
+		return err
+	}
+
+	// Create schema
+	_, err = db.Exec(string(schemas))
+	if err != nil {
+		return err
+	}
+
 	return err
 }

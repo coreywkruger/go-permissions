@@ -13,15 +13,22 @@ import (
 func handleCreateApp(P *Permissionist) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body := NewBody(w, r)
-		id, err := P.CreateApp(body.GetField("name"))
+		app, err := P.CreateApp(body.GetField("name"))
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
 			w.Write([]byte("Could not create app"))
 			return
 		}
+		bytes, err := json.Marshal(&app)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(500)
+			w.Write([]byte("Could not parse json"))
+			return
+		}
 		w.WriteHeader(200)
-		w.Write([]byte(id))
+		w.Write(bytes)
 	})
 }
 
@@ -63,15 +70,22 @@ func handleGetRoles(P *Permissionist) http.HandlerFunc {
 func handleCreateRole(P *Permissionist) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body := NewBody(w, r)
-		id, err := P.CreateRole(body.GetField("role_name"), mux.Vars(r)["appID"])
+		role, err := P.CreateRole(body.GetField("role_name"), mux.Vars(r)["appID"])
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
 			w.Write([]byte("Could not create role"))
 			return
 		}
+		bytes, err := json.Marshal(&role)
+		if err != nil {
+			log.Println(err)
+			w.WriteHeader(500)
+			w.Write([]byte("Could not parse json"))
+			return
+		}
 		w.WriteHeader(200)
-		w.Write([]byte(id))
+		w.Write(bytes)
 	})
 }
 
@@ -88,7 +102,7 @@ func handleGetRole(P *Permissionist) http.HandlerFunc {
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
-			w.Write([]byte("Could not get roles"))
+			w.Write([]byte("Could not parse json"))
 			return
 		}
 		w.WriteHeader(200)
@@ -141,7 +155,7 @@ func handleCreatePermission(P *Permissionist) http.HandlerFunc {
 
 func handleGrantPermissionToRole(P *Permissionist) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, err := P.GrantPermissionToRole(mux.Vars(r)["roleID"], mux.Vars(r)["appID"], mux.Vars(r)["permissionID"])
+		err := P.GrantPermissionToRole(mux.Vars(r)["roleID"], mux.Vars(r)["appID"], mux.Vars(r)["permissionID"])
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)

@@ -6,6 +6,12 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// App app schema
+type App struct {
+	ID   string `json:"id" db:"id"`
+	Name string `json:"name" db:"name"`
+}
+
 // RolePermission role_permissions schema
 type RolePermission struct {
 	ID           string `json:"id" db:"id"`
@@ -15,14 +21,16 @@ type RolePermission struct {
 
 // Permission permissions schema
 type Permission struct {
-	ID   string `json:"id" db:"id"`
-	Name string `json:"name" db:"name"`
+	ID    string `json:"id" db:"id"`
+	Name  string `json:"name" db:"name"`
+	AppID string `json:"app_id" db:"app_id"`
 }
 
 // Role roles schema
 type Role struct {
-	ID   string `json:"id" db:"id"`
-	Name string `json:"name" db:"name"`
+	ID    string `json:"id" db:"id"`
+	Name  string `json:"name" db:"name"`
+	AppID string `json:"app_id" db:"app_id"`
 }
 
 // Permissionist owns permissions crud
@@ -169,65 +177,65 @@ func (permissions *Permissionist) AssignRoleToEntity(entityID string, appID stri
 }
 
 // GrantPermissionToRole assigns permission of permissionID to role roleID
-func (permissions *Permissionist) GrantPermissionToRole(roleID string, appID string, permissionID string) (string, error) {
+func (permissions *Permissionist) GrantPermissionToRole(roleID string, appID string, permissionID string) error {
 	var id string
 	err := permissions.DB.QueryRow(`
 	insert into role_permissions (id, role_id, app_id, permission_id) values (
 		$1, (select id from roles where id = $2), $3, (select id from permissions where id = $4)
-	) returning id;
+	);
 	`, uuid.NewV4().String(), roleID, appID, permissionID).Scan(&id)
 
 	if err != nil {
-		return "", fmt.Errorf("Could not assign permission to role: %s", err.Error())
+		return fmt.Errorf("Could not assign permission to role: %s", err.Error())
 	}
 
-	return id, nil
+	return nil
 }
 
 // CreateApp creates a new app in the database
-func (permissions *Permissionist) CreateApp(name string) (string, error) {
-	var id string
+func (permissions *Permissionist) CreateApp(name string) (*App, error) {
+	var app App
 	err := permissions.DB.QueryRow(`
 	insert into apps (id, name) values (
 		$1, $2
-	) returning id;
-	`, uuid.NewV4().String(), name).Scan(&id)
+	) returning *;
+	`, uuid.NewV4().String(), name).Scan(&app.ID, &app.Name)
 
 	if err != nil {
-		return "", fmt.Errorf("Could not create a new app: %s", err.Error())
+		return nil, fmt.Errorf("Could not create a new app: %s", err.Error())
 	}
 
-	return id, nil
+	return &app, nil
 }
 
 // CreatePermission creates a new permission in the database
-func (permissions *Permissionist) CreatePermission(permissionName string, appID string) (string, error) {
-	var id string
+func (permissions *Permissionist) CreatePermission(permissionName string, appID string) (*Permission, error) {
+	var p Permission
 	err := permissions.DB.QueryRow(`
 	insert into permissions (id, name, app_id) values (
 		$1, $2, $3
-	) returning id;
-	`, uuid.NewV4().String(), permissionName, appID).Scan(&id)
+	) returning *;
+	`, uuid.NewV4().String(), permissionName, appID).Scan(&p.ID, &p.Name, &p.AppID)
 
 	if err != nil {
-		return "", fmt.Errorf("Could not create a new permission: %s", err.Error())
+		return nil, fmt.Errorf("Could not create a new permission: %s", err.Error())
 	}
 
-	return id, nil
+	return &p, nil
 }
 
 // CreateRole creates a new role in the database
-func (permissions *Permissionist) CreateRole(roleName string, appID string) (string, error) {
-	var id string
+func (permissions *Permissionist) CreateRole(roleName string, appID string) (*Role, error) {
+	var role Role
 	err := permissions.DB.QueryRow(`
 	insert into roles (id, name, app_id) values (
 		$1, $2, $3
-	) returning id;
-	`, uuid.NewV4().String(), roleName, appID).Scan(&id)
+	) returning *;
+	`, uuid.NewV4().String(), roleName, appID).Scan(&role.ID, &role.Name, &role.AppID)
 
 	if err != nil {
-		return "", fmt.Errorf("Could not create a new role: %s", err.Error())
+		return nil, fmt.Errorf("Could not create a new role: %s", err.Error())
 	}
 
-	return id, nil
+	return &role, nil
 }
