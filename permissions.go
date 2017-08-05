@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"github.com/satori/go.uuid"
+	"strings"
 )
 
 // App app schema
@@ -152,18 +153,18 @@ func (permissions *Permissionist) GetPermissionsByRole(roleID string, appID stri
 
 // GetRoles returns a list of all roles created for an app
 func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
-	var roleIDs []Role
-	err := permissions.DB.Select(&roleIDs, `
+	roles := []Role{}
+	err := permissions.DB.Select(&roles, `
 	SELECT *
 	FROM roles
-	WHERE app_id = $1;
-	`, appID)
+	WHERE app_id = '`+appID+`';
+	`)
 
 	if err != nil {
 		return nil, fmt.Errorf("Could not get roles: %s", err.Error())
 	}
 
-	return roleIDs, nil
+	return roles, nil
 }
 
 // GetRoleByID returns a role name
@@ -173,7 +174,7 @@ func (permissions *Permissionist) GetRoleByID(roleID string, appID string) (Role
 	SELECT *
 	FROM roles
 	WHERE id = $1
-			AND app_id = $2 limit 1;
+		AND app_id = $2 limit 1;
 	`, roleID, appID)
 
 	if err != nil {
@@ -261,4 +262,20 @@ func (permissions *Permissionist) CreateRole(roleName string, appID string) (*Ro
 	}
 
 	return &role, nil
+}
+
+// CreateRoles creates a new role in the database
+func (permissions *Permissionist) CreateRoles(roleNames []string, appID string) error {
+	query := "INSERT INTO roles (id, name, app_id) VALUES "
+	for _, roleName := range roleNames {
+		query += `('` + uuid.NewV4().String() + `', '` + roleName + `', '` + appID + `'), `
+	}
+	query = strings.TrimSuffix(query, ", ")
+	_, err := permissions.DB.Exec(query + ";")
+
+	if err != nil {
+		return fmt.Errorf("Could not create a new role: %s", err.Error())
+	}
+
+	return nil
 }

@@ -1,9 +1,3 @@
 {
-    "database": {
-        "host": "db",
-        "user": "db",
-        "password": "db",
-        "port": "5432",
-        "database": "db"
-    }
+    "database": "host=db port=5432 password=db user=db dbname=db sslmode=disable"
 }

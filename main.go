@@ -3,11 +3,9 @@ package main
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
 func handleCreateApp(P *Permissionist) http.HandlerFunc {
@@ -168,20 +166,8 @@ func handleGrantPermissionToRole(P *Permissionist) http.HandlerFunc {
 
 func main() {
 
-	config := viper.New()
-	config.SetConfigFile(os.Getenv("CONFIG"))
-	err := config.ReadInConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var dbconfig DbConfig
-	config.UnmarshalKey("database", &dbconfig)
-
-	db, err := InitDB(dbconfig)
-	if err != nil {
-		log.Fatal(err)
-	}
+	config := InitConfig()
+	db := InitDb(config.GetString("database"))
 
 	schemas, err := ioutil.ReadFile("schemas.sql")
 	if err != nil {
