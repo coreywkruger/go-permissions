@@ -265,17 +265,23 @@ func (permissions *Permissionist) CreateRole(roleName string, appID string) (*Ro
 }
 
 // CreateRoles creates a new role in the database
-func (permissions *Permissionist) CreateRoles(roleNames []string, appID string) error {
+func (permissions *Permissionist) CreateRoles(roleNames []string, appID string) ([]Role, error) {
+	var newRoles []Role
 	query := "INSERT INTO roles (id, name, app_id) VALUES "
 	for _, roleName := range roleNames {
-		query += `('` + uuid.NewV4().String() + `', '` + roleName + `', '` + appID + `'), `
+		newRole := Role{
+			ID: uuid.NewV4().String(), 
+			Name: roleName, 
+			AppID: appID,
+		}
+		query += `('` + newRole.ID + `', '` + newRole.Name + `', '` + newRole.AppID + `'), `
+		newRoles = append(newRoles, newRole)
 	}
 	query = strings.TrimSuffix(query, ", ")
 	_, err := permissions.DB.Exec(query + ";")
-
 	if err != nil {
-		return fmt.Errorf("Could not create a new role: %s", err.Error())
+		return nil, fmt.Errorf("Could not create a new role: %s", err.Error())
 	}
 
-	return nil
+	return newRoles, nil
 }

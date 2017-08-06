@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"github.com/jmoiron/sqlx"
 	"github.com/spf13/viper"
 	"io/ioutil"
@@ -10,85 +9,42 @@ import (
 	"testing"
 )
 
-func TestCreatePermission(t *testing.T) {
-	var testCases = []struct {
-		n        int
-		expected int
-	}{
-		{1, 1},
-	}
-
-	for _, test := range testCases {
-		log.Println(test)
-
-		config := testConfig()
-		db := testDb(config.GetString("database"))
-		testCleanup(db)
-
-		P := Permissionist{db}
-
-		app, err := P.CreateApp("Taco App")
-		if err != nil {
-			t.Errorf("Error: %s", err.Error())
-		}
-		role, err := P.CreateRole("Taco Role", app.ID)
-		if err != nil {
-			t.Errorf("Error: %s", err.Error())
-		}
-		permission, err := P.CreatePermission("Taco Permission", app.ID)
-		if err != nil {
-			t.Errorf("Error: %s", err.Error())
-		}
-		err = P.GrantPermissionToRole(role.ID, app.ID, permission.ID)
-		if err != nil {
-			t.Errorf("Error: %s", err.Error())
-		}
-	}
-}
-
 func TestCreateRoles(t *testing.T) {
-	var testCases = []struct {
-		args      []string
-		expected  []string
-		errorMessage interface{}
+	var cases = []struct {
+		AppID 		string
+		Roles     []string
+		Expected 	[]string
+		IsErr 		bool
 	}{
 		{
-			[]string{"one", "two", "three"},
-			[]string{"one", "two", "three"},
-			nil,
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", []string{"one", "two"}, []string{"one", "two"}, false,
 		}, {
-			[]string{"one", "two", "three"},
-			[]string{"one", "two", "three"},
-			interface{}{},
+			"bad app id", []string{"one", "two"}, []string{}, true,
 		},
 	}
 
-	for _, testCase := range testCases {
+	for _, tc := range cases {
 		config := testConfig()
 		db := testDb(config.GetString("database"))
 		testCleanup(db)
+		testMigrate(db)
 
 		P := Permissionist{db}
 
-		app, err := P.CreateApp("Taco-App")
-		if err != nil {
-			t.Errorf("Error: %s", err.Error())
+		newRoles, err := P.CreateRoles(tc.Roles, tc.AppID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
 		}
-
-		err = P.CreateRoles(testCase.args, app.ID)
-		if err != nil {
-			t.Errorf("Error: %s", err.Error())
-		}
-
-		roles, err := P.GetRoles(app.ID)
-		if err != nil {
-			t.Errorf("Error: %s", err.Error())
-		}
-
-		for i := 0; i < len(roles); i++ {
-			if roles[i].Name != testCase.expected[i] {
-				t.Errorf("Error: Expected %s, Got %s", testCase.expected[i], roles[i])
+		found := 0
+		for i := range newRoles {
+			for j := range tc.Roles {
+				if newRoles[i].Name == tc.Roles[j] {
+					found += 1
+				}
 			}
+		}
+		if found != len(tc.Expected) {
+			t.Errorf("Expected %d roles got %d", len(tc.Roles), found)
 		}
 	}
 }
@@ -101,12 +57,25 @@ func testCleanup(db *sqlx.DB) {
 		drop table if exists roles cascade;
 		drop table if exists entity_roles cascade;
 	`)
-	schemas, err := ioutil.ReadFile("schemas.sql")
 	if err != nil {
 		log.Fatal(err)
 	}
-	// Create schema
+}
+
+func testMigrate(db *sqlx.DB) {
+	schemas, err := ioutil.ReadFile("migrate.sql")
+	if err != nil {
+		log.Fatal(err)
+	}
 	_, err = db.Exec(string(schemas))
+	if err != nil {
+		log.Fatal(err)
+	}
+	migrate, err := ioutil.ReadFile("seed.sql")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = db.Exec(string(migrate))
 	if err != nil {
 		log.Fatal(err)
 	}
