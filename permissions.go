@@ -248,6 +248,28 @@ func (permissions *Permissionist) CreatePermission(permissionName string, appID 
 	return &p, nil
 }
 
+// CreatePermission creates a new permission in the database
+func (permissions *Permissionist) CreatePermissions(permissionNames []string, appID string) ([]Permission, error) {
+	var newPermissions []Permission
+	query := "INSERT INTO permissions (id, name, app_id) VALUES "
+	for _, permissionName := range permissionNames {
+		newPermission := Permission{
+			ID: uuid.NewV4().String(), 
+			Name: permissionName, 
+			AppID: appID,
+		}
+		query += `('` + newPermission.ID + `', '` + newPermission.Name + `', '` + newPermission.AppID + `'), `
+		newPermissions = append(newPermissions, newPermission)
+	}
+	query = strings.TrimSuffix(query, ", ")
+	_, err := permissions.DB.Exec(query + ";")
+	if err != nil {
+		return nil, fmt.Errorf("Could not create a new permission: %s", err.Error())
+	}
+
+	return newPermissions, nil
+}
+
 // CreateRole creates a new role in the database
 func (permissions *Permissionist) CreateRole(roleName string, appID string) (*Role, error) {
 	var role Role
