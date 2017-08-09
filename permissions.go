@@ -41,25 +41,26 @@ type Permissionist struct {
 }
 
 // Allowed checks if entity entityID has permission permissionID
-func (permissions *Permissionist) Allowed(entityID string, appID string, permissionID string) (bool, error) {
-	var rolePermissions []RolePermission
+func (permissions *Permissionist) Allowed(roleID string, appID string, permissionID string) (bool, error) {
+	var rolePermissions []string
 	err := permissions.DB.Select(&rolePermissions, `
-	SELECT *
-	FROM role_permissions AS rp
+	SELECT r.id
+	FROM roles AS r
+	INNER JOIN role_permissions AS rp
+		ON rp.permission_id = $3
+			AND r.id = $1
+			AND r.app_id = $2
+			AND rp.role_id = r.id
 	INNER JOIN permissions AS p
-		ON rp.permission_id = p.id
-			AND rp.app_id = $2
-			AND p.id = $3
-	INNER JOIN entity_roles AS er
-		ON er.app_id = $2
-			AND er.entity_id = $1;
-	`, entityID, appID, permissionID)
+		ON p.id = $3
+			AND rp.permission_id = p.id;
+	`, roleID, appID, permissionID)
 
 	if err != nil {
 		return false, errors.Wrap(err, "Could not check permission")
 	}
 
-	if rolePermissions == nil || len(rolePermissions) <= 0 {
+	if len(rolePermissions) <= 0 {
 		return false, nil
 	}
 
