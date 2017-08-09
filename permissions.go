@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 	"strings"
 )
@@ -55,7 +56,7 @@ func (permissions *Permissionist) Allowed(entityID string, appID string, permiss
 	`, entityID, appID, permissionID)
 
 	if err != nil {
-		return false, fmt.Errorf("Could not check permission: %s", err.Error())
+		return false, errors.Wrap(err, "Could not check permission")
 	}
 
 	if rolePermissions == nil || len(rolePermissions) <= 0 {
@@ -70,7 +71,7 @@ func (permissions *Permissionist) GetApps() ([]string, error) {
 	var apps []string
 	err := permissions.DB.Select(&apps, `select id from apps;`)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get apps: %s", err.Error())
+		return nil, errors.Wrap(err, "Could not get apps")
 	}
 
 	return apps, nil
@@ -88,7 +89,7 @@ func (permissions *Permissionist) GetAppsByEntityID(entityID string) ([]string, 
 	`, entityID)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not get apps: %s", err.Error())
+		return nil, errors.Wrap(err, "Could not get apps")
 	}
 
 	return apps, nil
@@ -103,7 +104,7 @@ func (permissions *Permissionist) GetApp(appID string) (string, error) {
 	WHERE id = $1;
 	`, appID)
 	if err != nil {
-		return "", fmt.Errorf("Could not get app: %s", err.Error())
+		return "", errors.Wrap(err, "Could not get app")
 	}
 
 	return id, nil
@@ -125,7 +126,7 @@ func (permissions *Permissionist) GetPermissionsByEntityID(entityID string, appI
 	`, entityID, appID)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not get permissions: %s", err.Error())
+		return nil, errors.Wrap(err, "Could not get permissions")
 	}
 
 	return perms, nil
@@ -145,7 +146,7 @@ func (permissions *Permissionist) GetPermissionsByRole(roleID string, appID stri
 	`, roleID, appID)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not get permissions: %s", err.Error())
+		return nil, errors.Wrap(err, "Could not get permissions")
 	}
 
 	return perms, nil
@@ -161,7 +162,7 @@ func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
 	`)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not get roles: %s", err.Error())
+		return nil, errors.Wrap(err, "Could not get roles")
 	}
 
 	return roles, nil
@@ -178,7 +179,7 @@ func (permissions *Permissionist) GetRoleByID(roleID string, appID string) (Role
 	`, roleID, appID)
 
 	if err != nil {
-		return role, fmt.Errorf("Could not get role: %s", err.Error())
+		return role, errors.Wrap(err, "Could not get role")
 	}
 
 	return role, nil
@@ -194,7 +195,7 @@ func (permissions *Permissionist) AssignRoleToEntity(entityID string, appID stri
 	`, uuid.NewV4().String(), entityID, appID, roleID).Scan(&id)
 
 	if err != nil {
-		return "", fmt.Errorf("Could not assign role to entity: %s", err.Error())
+		return "", errors.Wrap(err, "Could not assign role to entity")
 	}
 
 	return id, nil
@@ -210,68 +211,74 @@ func (permissions *Permissionist) GrantPermissionToRole(roleID string, appID str
 	`, uuid.NewV4().String(), roleID, appID, permissionID).Scan(&id)
 
 	if err != nil {
-		return fmt.Errorf("Could not assign permission to role: %s", err.Error())
+		return errors.Wrap(err, "Could not assign permission to role")
 	}
 
 	return nil
 }
 
 // CreateApp creates a new app in the database
-func (permissions *Permissionist) CreateApp(name string) (*App, error) {
+func (permissions *Permissionist) CreateApp(name string) (App, error) {
 	var app App
 	err := permissions.DB.QueryRow(`
 	INSERT INTO apps (id, name) VALUES (
-		$1, $2
+		$1, '$2'
 	) RETURNING *;
 	`, uuid.NewV4().String(), name).Scan(&app.ID, &app.Name)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not create a new app: %s", err.Error())
+		return app, errors.Wrap(err, "Could not create a new app")
 	}
 
-	return &app, nil
+	return app, nil
 }
 
 // CreatePermission creates a new permission in the database
-func (permissions *Permissionist) CreatePermission(permissionName string, appID string) (*Permission, error) {
+func (permissions *Permissionist) CreatePermission(permissionName string, appID string) (Permission, error) {
 	var p Permission
+	if len(permissionName) < 1 {
+		return p, errors.New("Missing permission name")
+	}
+	if len(appID) < 1 {
+		return p, errors.New("Missing app id")
+	}
 	err := permissions.DB.QueryRow(`
 	INSERT INTO permissions (id, name, app_id) VALUES (
 		$1, $2, $3
-	) RETURNING *;
+	) RETURNING id, name, app_id;
 	`, uuid.NewV4().String(), permissionName, appID).Scan(&p.ID, &p.Name, &p.AppID)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not create a new permission: %s", err.Error())
+		return p, errors.Wrap(err, "Could not create a new permission")
 	}
 
-	return &p, nil
+	return p, nil
 }
 
-// CreatePermission creates a new permission in the database
+// CreatePermissions creates new permissions in the database
 func (permissions *Permissionist) CreatePermissions(permissionNames []string, appID string) ([]Permission, error) {
 	var newPermissions []Permission
 	query := "INSERT INTO permissions (id, name, app_id) VALUES "
 	for _, permissionName := range permissionNames {
 		newPermission := Permission{
-			ID: uuid.NewV4().String(), 
-			Name: permissionName, 
+			ID:    uuid.NewV4().String(),
+			Name:  permissionName,
 			AppID: appID,
 		}
-		query += `('` + newPermission.ID + `', '` + newPermission.Name + `', '` + newPermission.AppID + `'), `
+		query += fmt.Sprintf(`('%s', '%s', '%s'),`, newPermission.ID, newPermission.Name, newPermission.AppID)
 		newPermissions = append(newPermissions, newPermission)
 	}
-	query = strings.TrimSuffix(query, ", ")
-	_, err := permissions.DB.Exec(query + ";")
+	query = strings.TrimSuffix(query, ",") + ";"
+	_, err := permissions.DB.Exec(query)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create a new permission: %s", err.Error())
+		return nil, errors.Wrap(err, "Could not create new permissions")
 	}
 
 	return newPermissions, nil
 }
 
 // CreateRole creates a new role in the database
-func (permissions *Permissionist) CreateRole(roleName string, appID string) (*Role, error) {
+func (permissions *Permissionist) CreateRole(roleName string, appID string) (Role, error) {
 	var role Role
 	err := permissions.DB.QueryRow(`
 	INSERT INTO roles (id, name, app_id) VALUES (
@@ -280,10 +287,10 @@ func (permissions *Permissionist) CreateRole(roleName string, appID string) (*Ro
 	`, uuid.NewV4().String(), roleName, appID).Scan(&role.ID, &role.Name, &role.AppID)
 
 	if err != nil {
-		return nil, fmt.Errorf("Could not create a new role: %s", err.Error())
+		return role, errors.Wrap(err, "Could not create a new role")
 	}
 
-	return &role, nil
+	return role, nil
 }
 
 // CreateRoles creates a new role in the database
@@ -292,17 +299,17 @@ func (permissions *Permissionist) CreateRoles(roleNames []string, appID string) 
 	query := "INSERT INTO roles (id, name, app_id) VALUES "
 	for _, roleName := range roleNames {
 		newRole := Role{
-			ID: uuid.NewV4().String(), 
-			Name: roleName, 
+			ID:    uuid.NewV4().String(),
+			Name:  roleName,
 			AppID: appID,
 		}
-		query += `('` + newRole.ID + `', '` + newRole.Name + `', '` + newRole.AppID + `'), `
+		query += fmt.Sprintf(`('%s', '%s', '%s'),`, newRole.ID, newRole.Name, newRole.AppID)
 		newRoles = append(newRoles, newRole)
 	}
-	query = strings.TrimSuffix(query, ", ")
-	_, err := permissions.DB.Exec(query + ";")
+	query = strings.TrimSuffix(query, ",") + " RETURNING name;"
+	_, err := permissions.DB.Exec(query)
 	if err != nil {
-		return nil, fmt.Errorf("Could not create a new role: %s", err.Error())
+		return nil, errors.Wrap(err, "Could not create a new role")
 	}
 
 	return newRoles, nil

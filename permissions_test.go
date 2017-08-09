@@ -9,12 +9,49 @@ import (
 	"testing"
 )
 
+func TestCreatePermission(t *testing.T) {
+	var cases = []struct {
+		AppID      string
+		Permission string
+		Expected   string
+		IsErr      bool
+	}{
+		{
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "read", "read", false,
+		}, {
+			"bad app id", "read", "", true,
+		}, {
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "", "", true,
+		}, {
+			"", "read", "", true,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		newPermission, err := P.CreatePermission(tc.Permission, tc.AppID)
+		if (err != nil) != tc.IsErr {
+			log.Println(tc.Expected)
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		if newPermission.Name != tc.Expected {
+			t.Errorf("Expected permission name of '%s' got '%s'", tc.Expected, newPermission.Name)
+		}
+	}
+}
+
 func TestCreatePermissions(t *testing.T) {
 	var cases = []struct {
-		AppID 			string
+		AppID       string
 		Permissions []string
-		Expected 		[]string
-		IsErr 			bool
+		Expected    []string
+		IsErr       bool
 	}{
 		{
 			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", []string{"one", "two"}, []string{"one", "two"}, false,
@@ -39,7 +76,7 @@ func TestCreatePermissions(t *testing.T) {
 		for i := range newPermissions {
 			for j := range tc.Permissions {
 				if newPermissions[i].Name == tc.Permissions[j] {
-					found += 1
+					found++
 				}
 			}
 		}
@@ -51,10 +88,10 @@ func TestCreatePermissions(t *testing.T) {
 
 func TestCreateRoles(t *testing.T) {
 	var cases = []struct {
-		AppID 		string
-		Roles     []string
-		Expected 	[]string
-		IsErr 		bool
+		AppID    string
+		Roles    []string
+		Expected []string
+		IsErr    bool
 	}{
 		{
 			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", []string{"one", "two"}, []string{"one", "two"}, false,
@@ -79,7 +116,7 @@ func TestCreateRoles(t *testing.T) {
 		for i := range newRoles {
 			for j := range tc.Roles {
 				if newRoles[i].Name == tc.Roles[j] {
-					found += 1
+					found++
 				}
 			}
 		}
@@ -91,11 +128,11 @@ func TestCreateRoles(t *testing.T) {
 
 func testCleanup(db *sqlx.DB) {
 	_, err := db.Exec(`
-		drop table if exists apps cascade;
-		drop table if exists permissions cascade;
-		drop table if exists role_permissions cascade;
-		drop table if exists roles cascade;
-		drop table if exists entity_roles cascade;
+		DROP TABLE IF EXISTS apps CASCADE;
+		DROP TABLE IF EXISTS permissions CASCADE;
+		DROP TABLE IF EXISTS role_permissions CASCADE;
+		DROP TABLE IF EXISTS roles CASCADE;
+		DROP TABLE IF EXISTS entity_roles CASCADE;
 	`)
 	if err != nil {
 		log.Fatal(err)
