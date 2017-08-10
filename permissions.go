@@ -68,9 +68,9 @@ func (permissions *Permissionist) Allowed(roleID string, appID string, permissio
 }
 
 // GetApps returns a list of all apps
-func (permissions *Permissionist) GetApps() ([]string, error) {
-	var apps []string
-	err := permissions.DB.Select(&apps, `select id from apps;`)
+func (permissions *Permissionist) GetApps() ([]App, error) {
+	var apps []App
+	err := permissions.DB.Select(&apps, `SELECT * FROM apps;`)
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not get apps")
 	}
@@ -79,14 +79,14 @@ func (permissions *Permissionist) GetApps() ([]string, error) {
 }
 
 // GetAppsByEntityID returns a list of all apps
-func (permissions *Permissionist) GetAppsByEntityID(entityID string) ([]string, error) {
-	var apps []string
+func (permissions *Permissionist) GetAppsByEntityID(entityID string) ([]App, error) {
+	var apps []App
 	err := permissions.DB.Select(&apps, `
-	SELECT id
+	SELECT a.id, a.name
 	FROM apps AS a
-	INNER JOIN entity_roles AS er
-		ON a.id = er.app_id
-			AND er.id = $1;
+	INNER JOIN roles AS r
+		ON a.id = r.app_id
+			AND r.id = $1;
 	`, entityID)
 
 	if err != nil {

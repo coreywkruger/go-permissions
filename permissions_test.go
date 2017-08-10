@@ -52,6 +52,79 @@ func TestAllowed(t *testing.T) {
 	}
 }
 
+func TestGetApps(t *testing.T) {
+	var cases = []struct {
+		Expected []string
+		IsErr    bool
+	}{
+		{
+			[]string{"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb"}, false,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		apps, err := P.GetApps()
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		found := 0
+		for i := range apps {
+			for j := range tc.Expected {
+				if apps[i].ID == tc.Expected[j] {
+					found++
+				}
+			}
+		}
+		if found != len(tc.Expected) {
+			t.Errorf("Expected %d roles got %d", len(tc.Expected), found)
+		}
+	}
+}
+
+func TestGetAppsByEntityID(t *testing.T) {
+	var cases = []struct {
+		EntityID string
+		Expected []string
+		IsErr    bool
+	}{
+		{
+			"c51003fc-2ae4-4296-9d5e-325c76a40316", []string{"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb"}, false,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		apps, err := P.GetAppsByEntityID(tc.EntityID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		found := 0
+		for i := range apps {
+			for j := range tc.Expected {
+				if apps[i].ID == tc.Expected[j] {
+					found++
+				}
+			}
+		}
+		if found != len(tc.Expected) {
+			t.Errorf("Expected %d roles got %d", len(tc.Expected), found)
+		}
+	}
+}
+
 func TestCreatePermission(t *testing.T) {
 	var cases = []struct {
 		AppID      string
