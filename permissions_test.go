@@ -125,6 +125,46 @@ func TestGetAppsByEntityID(t *testing.T) {
 	}
 }
 
+func TestGetPermissionsByRoleID(t *testing.T) {
+	var cases = []struct {
+		RoleID   string
+		Expected []string
+		IsErr    bool
+	}{
+		{
+			"c51003fc-2ae4-4296-9d5e-325c76a40316", []string{"5bee1c60-43e4-460e-80ae-b7c3b8774033", "73017965-b16c-4c6e-9ec1-1e1272594648", "28a212cc-51eb-4e17-95e1-2baa65e55b16"}, false,
+		},
+		{
+			"c1688c91-b818-4917-a20e-b95a2006c07f", []string{"5bee1c60-43e4-460e-80ae-b7c3b8774033"}, false,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		permissions, err := P.GetPermissionsByRoleID(tc.RoleID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		found := 0
+		for i := range permissions {
+			for j := range tc.Expected {
+				if permissions[i].ID == tc.Expected[j] {
+					found++
+				}
+			}
+		}
+		if found != len(tc.Expected) {
+			t.Errorf("Expected %d roles got %d", len(tc.Expected), found)
+		}
+	}
+}
+
 func TestCreatePermission(t *testing.T) {
 	var cases = []struct {
 		AppID      string
@@ -202,6 +242,33 @@ func TestCreatePermissions(t *testing.T) {
 	}
 }
 
+func TestAssignRoleToEntity(t *testing.T) {
+	var cases = []struct {
+		EntityID string
+		RoleID   string
+		IsErr    bool
+	}{
+		{
+			"some entity", "c51003fc-2ae4-4296-9d5e-325c76a40316", false,
+		}, {
+			"some entity", "bad role id", true,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		err := P.AssignRoleToEntity(tc.EntityID, tc.RoleID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+	}
+}
 func TestCreateRoles(t *testing.T) {
 	var cases = []struct {
 		AppID    string

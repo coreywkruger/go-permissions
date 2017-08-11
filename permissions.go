@@ -134,17 +134,15 @@ func (permissions *Permissionist) GetPermissionsByEntityID(entityID string, appI
 }
 
 // GetPermissionsByRole returns a list of all permissions that belong to an entity
-func (permissions *Permissionist) GetPermissionsByRole(roleID string, appID string) ([]Permission, error) {
+func (permissions *Permissionist) GetPermissionsByRoleID(roleID string) ([]Permission, error) {
 	var perms []Permission
 	err := permissions.DB.Select(&perms, `
-	SELECT *
+	SELECT p.id, p.name, p.app_id
 	FROM permissions AS p
 	INNER JOIN role_permissions AS rp
 		ON p.id = rp.permission_id
-			AND rp.role_id = $1
-			AND p.app_id = $2
-			AND rp.app_id = $2
-	`, roleID, appID)
+			AND rp.role_id = $1;
+	`, roleID)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not get permissions")
@@ -159,8 +157,8 @@ func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
 	err := permissions.DB.Select(&roles, `
 	SELECT *
 	FROM roles
-	WHERE app_id = '`+appID+`';
-	`)
+	WHERE app_id = $1;
+	`, appID)
 
 	if err != nil {
 		return nil, errors.Wrap(err, "Could not get roles")
@@ -187,19 +185,18 @@ func (permissions *Permissionist) GetRoleByID(roleID string, appID string) (Role
 }
 
 // AssignRoleToEntity assigns role roleID to entity entityID
-func (permissions *Permissionist) AssignRoleToEntity(entityID string, appID string, roleID string) (string, error) {
-	var id string
-	err := permissions.DB.QueryRow(`
-	INSERT INTO entity_roles (id, entity_id, app_id, role_id) VALUES ( 
-		$1, $2, $3, $4 
-	) RETURNING id;
-	`, uuid.NewV4().String(), entityID, appID, roleID).Scan(&id)
+func (permissions *Permissionist) AssignRoleToEntity(entityID string, roleID string) error {
+	_, err := permissions.DB.Exec(`
+	INSERT INTO entity_roles AS er (id, entity_id, role_id) VALUES (
+		$1, $2, $3 
+	) RETURNING role_id;
+	`, uuid.NewV4().String(), entityID, roleID)
 
 	if err != nil {
-		return "", errors.Wrap(err, "Could not assign role to entity")
+		return errors.Wrap(err, "Could not assign role to entity")
 	}
 
-	return id, nil
+	return nil
 }
 
 // GrantPermissionToRole assigns permission of permissionID to role roleID
