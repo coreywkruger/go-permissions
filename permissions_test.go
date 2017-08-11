@@ -173,13 +173,13 @@ func TestCreatePermission(t *testing.T) {
 		IsErr      bool
 	}{
 		{
-			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "read", "read", false,
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "taco-eating", "taco-eating", false,
 		}, {
-			"bad app id", "read", "", true,
+			"bad-app-id", "taco-eating", "", true,
 		}, {
 			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "", "", true,
 		}, {
-			"", "read", "", true,
+			"", "taco-eating", "", true,
 		},
 	}
 
@@ -193,7 +193,6 @@ func TestCreatePermission(t *testing.T) {
 
 		newPermission, err := P.CreatePermission(tc.Permission, tc.AppID)
 		if (err != nil) != tc.IsErr {
-			log.Println(tc.Expected)
 			t.Errorf("Unexpected error response [%v]", err)
 		}
 		if newPermission.Name != tc.Expected {
