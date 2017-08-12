@@ -42,14 +42,6 @@ type Permissionist struct {
 
 // EntityIsAllowed checks if entity entityID has permission permissionID
 func (permissions *Permissionist) EntityIsAllowed(entityID string, permissionID string) (bool, error) {
-
-	// SELECT er.id
-	// FROM entity_roles AS er
-	// INNER JOIN role_permissions AS rp
-	// 	ON rp.permission_id = $2
-	// 		AND er.entity_id = $1
-	// 		AND rp.role_id = er.role_id;
-
 	var entityRoleIDs []string
 	err := permissions.DB.Select(&entityRoleIDs, `
 	SELECT p.id
@@ -218,7 +210,7 @@ func (permissions *Permissionist) AssignRoleToEntity(entityID string, roleID str
 	_, err := permissions.DB.Exec(`
 	INSERT INTO entity_roles AS er (id, entity_id, role_id) VALUES (
 		$1, $2, $3 
-	) RETURNING role_id;
+	);
 	`, uuid.NewV4().String(), entityID, roleID)
 
 	if err != nil {
@@ -233,7 +225,7 @@ func (permissions *Permissionist) GrantPermissionToRole(roleID string, permissio
 	_, err := permissions.DB.Exec(`
 	INSERT INTO role_permissions (id, role_id, permission_id) VALUES (
 		$1, $2, $3
-	) RETURNING id;
+	);
 	`, uuid.NewV4().String(), roleID, permissionID)
 
 	if err != nil {

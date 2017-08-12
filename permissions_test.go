@@ -9,6 +9,32 @@ import (
 	"testing"
 )
 
+func TestGrantPermissionToRole(t *testing.T) {
+	var cases = []struct {
+		RoleID     string
+		PermissionID string
+		IsErr        bool
+	}{
+		{
+			"c1688c91-b818-4917-a20e-b95a2006c07f", "73017965-b16c-4c6e-9ec1-1e1272594648", false, // Role 'Admin' has a permission
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		err := P.GrantPermissionToRole(tc.RoleID, tc.PermissionID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+	}
+}
+
 func TestEntityIsAllowed(t *testing.T) {
 	var cases = []struct {
 		EntityID     string
@@ -23,9 +49,9 @@ func TestEntityIsAllowed(t *testing.T) {
 		}, {
 			"07df4a77-6243-41cd-a421-90c524ef2203", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, // Role 'Customer' has permission
 		}, {
-			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "bad permission id", false, true, // Error caused by malformed permission id
+			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "bad permission id", false, true, // Error caused by bad permission id
 		}, {
-			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "bad permission id", false, true, // Error caused by malformed role id
+			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "bad permission id", false, true, // Error caused by bad role id
 		},
 	}
 
@@ -83,28 +109,6 @@ func TestRoleIsAllowed(t *testing.T) {
 		}
 		if allowed != tc.Expected {
 			t.Errorf("Expected permission to be '%t' got '%t'", tc.Expected, allowed)
-		}
-	}
-}
-
-func TestGrantPermissionToRole(t *testing.T) {
-	var cases = []struct {
-		RoleID       string
-		PermissionID string
-		IsErr        bool
-	}{}
-
-	for _, tc := range cases {
-		config := testConfig()
-		db := testDb(config.GetString("database"))
-		testCleanup(db)
-		testMigrate(db)
-
-		P := Permissionist{db}
-
-		err := P.GrantPermissionToRole(tc.RoleID, tc.PermissionID)
-		if (err != nil) != tc.IsErr {
-			t.Errorf("Unexpected error response [%v]", err)
 		}
 	}
 }
