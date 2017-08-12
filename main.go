@@ -153,7 +153,7 @@ func handleCreatePermission(P *Permissionist) http.HandlerFunc {
 
 func handleGrantPermissionToRole(P *Permissionist) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := P.GrantPermissionToRole(mux.Vars(r)["roleID"], mux.Vars(r)["appID"], mux.Vars(r)["permissionID"])
+		err := P.GrantPermissionToRole(mux.Vars(r)["roleID"], mux.Vars(r)["permissionID"])
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)

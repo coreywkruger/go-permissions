@@ -26,5 +26,6 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 CREATE TABLE IF NOT EXISTS entity_roles (
 	id UUID PRIMARY KEY,
 	role_id UUID NOT NULL REFERENCES roles,
-	entity_id VARCHAR(60) NOT NULL
+	entity_id VARCHAR(60) NOT NULL,
+	UNIQUE (entity_id, role_id)
 );

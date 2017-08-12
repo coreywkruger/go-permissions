@@ -9,27 +9,62 @@ import (
 	"testing"
 )
 
-func TestAllowed(t *testing.T) {
+func TestEntityIsAllowed(t *testing.T) {
 	var cases = []struct {
 		EntityID     string
-		AppID        string
+		PermissionID string
+		Expected     bool
+		IsErr        bool
+	}{
+		{
+			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, // Role 'Admin' has a permission
+		}, {
+			"c1688c91-b818-4917-a20e-b95a2006c07f", "28a212cc-51eb-4e17-95e1-2baa65e55b16", false, false, // Role 'Customer' doens't have permission
+		}, {
+			"c1688c91-b818-4917-a20e-b95a2006c07f", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, // Role 'Customer' has permission
+		}, {
+			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "bad permission id", false, true, // Error caused by malformed permission id
+		}, {
+			"bad role id", "5bee1c60-43e4-460e-80ae-b7c3b8774033", false, true, // Error caused by malformed role id
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+		log.Println(tc.EntityID, tc.PermissionID)
+		allowed, err := P.EntityIsAllowed(tc.EntityID, tc.PermissionID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		if allowed != tc.Expected {
+			t.Errorf("Expected permission to be '%t' got '%t'", tc.Expected, allowed)
+		}
+	}
+}
+
+func TestRoleIsAllowed(t *testing.T) {
+	var cases = []struct {
+		RoleID       string
 		PermissionID string
 		Expected     bool
 		IsErr        bool
 		Description  string
 	}{
 		{
-			"c51003fc-2ae4-4296-9d5e-325c76a40316", "697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, "Role 'Admin' has a permission",
+			"c51003fc-2ae4-4296-9d5e-325c76a40316", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, "Role 'Admin' has a permission",
 		}, {
-			"c1688c91-b818-4917-a20e-b95a2006c07f", "697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "28a212cc-51eb-4e17-95e1-2baa65e55b16", false, false, "Role 'Customer' doens't have permission",
+			"c1688c91-b818-4917-a20e-b95a2006c07f", "28a212cc-51eb-4e17-95e1-2baa65e55b16", false, false, "Role 'Customer' doens't have permission",
 		}, {
-			"c1688c91-b818-4917-a20e-b95a2006c07f", "697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, "Role 'Customer' has permission",
+			"c1688c91-b818-4917-a20e-b95a2006c07f", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, "Role 'Customer' has permission",
 		}, {
-			"c51003fc-2ae4-4296-9d5e-325c76a40316", "697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "bad permission id", false, true, "Error caused by malformed permission id",
+			"c51003fc-2ae4-4296-9d5e-325c76a40316", "bad permission id", false, true, "Error caused by malformed permission id",
 		}, {
-			"c51003fc-2ae4-4296-9d5e-325c76a40316", "bad app id", "5bee1c60-43e4-460e-80ae-b7c3b8774033", false, true, "Error caused by malformed app id",
-		}, {
-			"bad role id", "697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "5bee1c60-43e4-460e-80ae-b7c3b8774033", false, true, "Error caused by malformed role id",
+			"bad role id", "5bee1c60-43e4-460e-80ae-b7c3b8774033", false, true, "Error caused by malformed role id",
 		},
 	}
 
@@ -41,13 +76,35 @@ func TestAllowed(t *testing.T) {
 
 		P := Permissionist{db}
 
-		allowed, err := P.Allowed(tc.EntityID, tc.AppID, tc.PermissionID)
+		allowed, err := P.RoleIsAllowed(tc.RoleID, tc.PermissionID)
 		if (err != nil) != tc.IsErr {
 			log.Println(tc.Expected)
 			t.Errorf("Unexpected error response [%v]", err)
 		}
 		if allowed != tc.Expected {
 			t.Errorf("Expected permission to be '%t' got '%t'", tc.Expected, allowed)
+		}
+	}
+}
+
+func TestGrantPermissionToRole(t *testing.T) {
+	var cases = []struct {
+		RoleID       string
+		PermissionID string
+		IsErr        bool
+	}{}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		err := P.GrantPermissionToRole(tc.RoleID, tc.PermissionID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
 		}
 	}
 }

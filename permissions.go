@@ -40,21 +40,43 @@ type Permissionist struct {
 	DB *sqlx.DB
 }
 
-// Allowed checks if entity entityID has permission permissionID
-func (permissions *Permissionist) Allowed(roleID string, appID string, permissionID string) (bool, error) {
+// EntityIsAllowed checks if entity entityID has permission permissionID
+func (permissions *Permissionist) EntityIsAllowed(entityID string, permissionID string) (bool, error) {
+	var entityRoleIDs []string
+	err := permissions.DB.Select(&entityRoleIDs, `
+	SELECT er.id
+	FROM entity_roles AS er
+	INNER JOIN role_permissions AS rp
+		ON rp.permission_id = $2
+			AND er.entity_id = $1
+			AND rp.role_id = er.role_id;
+	`, entityID, permissionID)
+
+	if err != nil {
+		return false, errors.Wrap(err, "Could not check permission")
+	}
+
+	if len(entityRoleIDs) == 0 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+// RoleIsAllowed checks if entity roleID has permission permissionID
+func (permissions *Permissionist) RoleIsAllowed(roleID string, permissionID string) (bool, error) {
 	var rolePermissions []string
 	err := permissions.DB.Select(&rolePermissions, `
 	SELECT r.id
 	FROM roles AS r
 	INNER JOIN role_permissions AS rp
-		ON rp.permission_id = $3
+		ON rp.permission_id = $2
 			AND r.id = $1
-			AND r.app_id = $2
 			AND rp.role_id = r.id
 	INNER JOIN permissions AS p
-		ON p.id = $3
+		ON p.id = $2
 			AND rp.permission_id = p.id;
-	`, roleID, appID, permissionID)
+	`, roleID, permissionID)
 
 	if err != nil {
 		return false, errors.Wrap(err, "Could not check permission")
@@ -200,13 +222,12 @@ func (permissions *Permissionist) AssignRoleToEntity(entityID string, roleID str
 }
 
 // GrantPermissionToRole assigns permission of permissionID to role roleID
-func (permissions *Permissionist) GrantPermissionToRole(roleID string, appID string, permissionID string) error {
-	var id string
-	err := permissions.DB.QueryRow(`
-	INSERT INTO role_permissions (id, role_id, app_id, permission_id) VALUES (
-		$1, $2, $3, $4
+func (permissions *Permissionist) GrantPermissionToRole(roleID string, permissionID string) error {
+	_, err := permissions.DB.Exec(`
+	INSERT INTO role_permissions (id, role_id, permission_id) VALUES (
+		$1, $2, $3
 	) RETURNING id;
-	`, uuid.NewV4().String(), roleID, appID, permissionID).Scan(&id)
+	`, uuid.NewV4().String(), roleID, permissionID)
 
 	if err != nil {
 		return errors.Wrap(err, "Could not assign permission to role")
