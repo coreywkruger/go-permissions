@@ -42,13 +42,23 @@ type Permissionist struct {
 
 // EntityIsAllowed checks if entity entityID has permission permissionID
 func (permissions *Permissionist) EntityIsAllowed(entityID string, permissionID string) (bool, error) {
+
+	// SELECT er.id
+	// FROM entity_roles AS er
+	// INNER JOIN role_permissions AS rp
+	// 	ON rp.permission_id = $2
+	// 		AND er.entity_id = $1
+	// 		AND rp.role_id = er.role_id;
+
 	var entityRoleIDs []string
 	err := permissions.DB.Select(&entityRoleIDs, `
-	SELECT er.id
-	FROM entity_roles AS er
+	SELECT p.id
+	FROM permissions AS p
+	INNER JOIN entity_roles AS er
+		ON er.entity_id = $1
 	INNER JOIN role_permissions AS rp
 		ON rp.permission_id = $2
-			AND er.entity_id = $1
+			AND rp.permission_id = p.id
 			AND rp.role_id = er.role_id;
 	`, entityID, permissionID)
 
@@ -65,24 +75,21 @@ func (permissions *Permissionist) EntityIsAllowed(entityID string, permissionID 
 
 // RoleIsAllowed checks if entity roleID has permission permissionID
 func (permissions *Permissionist) RoleIsAllowed(roleID string, permissionID string) (bool, error) {
-	var rolePermissions []string
-	err := permissions.DB.Select(&rolePermissions, `
-	SELECT r.id
-	FROM roles AS r
+	var rolePermissionIDs []string
+	err := permissions.DB.Select(&rolePermissionIDs, `
+	SELECT rp.id
+	FROM permissions AS p
 	INNER JOIN role_permissions AS rp
-		ON rp.permission_id = $2
-			AND r.id = $1
-			AND rp.role_id = r.id
-	INNER JOIN permissions AS p
 		ON p.id = $2
-			AND rp.permission_id = p.id;
+			AND rp.permission_id = p.id
+			AND rp.role_id = $1;
 	`, roleID, permissionID)
 
 	if err != nil {
 		return false, errors.Wrap(err, "Could not check permission")
 	}
 
-	if len(rolePermissions) <= 0 {
+	if len(rolePermissionIDs) <= 0 {
 		return false, nil
 	}
 

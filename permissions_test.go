@@ -19,13 +19,13 @@ func TestEntityIsAllowed(t *testing.T) {
 		{
 			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, // Role 'Admin' has a permission
 		}, {
-			"c1688c91-b818-4917-a20e-b95a2006c07f", "28a212cc-51eb-4e17-95e1-2baa65e55b16", false, false, // Role 'Customer' doens't have permission
+			"07df4a77-6243-41cd-a421-90c524ef2203", "28a212cc-51eb-4e17-95e1-2baa65e55b16", false, false, // Role 'Customer' doens't have permission
 		}, {
-			"c1688c91-b818-4917-a20e-b95a2006c07f", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, // Role 'Customer' has permission
+			"07df4a77-6243-41cd-a421-90c524ef2203", "5bee1c60-43e4-460e-80ae-b7c3b8774033", true, false, // Role 'Customer' has permission
 		}, {
 			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "bad permission id", false, true, // Error caused by malformed permission id
 		}, {
-			"bad role id", "5bee1c60-43e4-460e-80ae-b7c3b8774033", false, true, // Error caused by malformed role id
+			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "bad permission id", false, true, // Error caused by malformed role id
 		},
 	}
 
@@ -36,7 +36,7 @@ func TestEntityIsAllowed(t *testing.T) {
 		testMigrate(db)
 
 		P := Permissionist{db}
-		log.Println(tc.EntityID, tc.PermissionID)
+
 		allowed, err := P.EntityIsAllowed(tc.EntityID, tc.PermissionID)
 		if (err != nil) != tc.IsErr {
 			t.Errorf("Unexpected error response [%v]", err)
