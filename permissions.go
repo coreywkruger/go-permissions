@@ -138,15 +138,14 @@ func (permissions *Permissionist) GetApp(appID string) (string, error) {
 func (permissions *Permissionist) GetPermissionsByEntityID(entityID string, appID string) ([]Permission, error) {
 	var perms []Permission
 	err := permissions.DB.Select(&perms, `
-	SELECT *
+	SELECT p.id, p.name, p.app_id
 	FROM permissions AS p
-	INNER JOIN role_permissions AS rp
-		ON p.id = rp.permission_id
-			AND p.app_id = $2
-			AND rp.app_id = $2
 	INNER JOIN entity_roles AS er
 		ON er.entity_id = $1
-			AND er.app_id = $2;
+			AND p.app_id = $2
+	INNER JOIN role_permissions AS rp
+		ON er.role_id = rp.role_id 
+			AND rp.permission_id = p.id;
 	`, entityID, appID)
 
 	if err != nil {

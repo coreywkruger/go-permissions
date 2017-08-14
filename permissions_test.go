@@ -149,6 +149,48 @@ func TestGetApps(t *testing.T) {
 	}
 }
 
+func TestGetPermissionsByEntityID(t *testing.T) {
+	var cases = []struct {
+		EntityID string
+		AppID    string
+		Expected []string
+		IsErr    bool
+	}{
+		{
+			"809e5e2f-0555-4d81-8f91-d6d8f0d4ea79", "697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", []string{
+				"5bee1c60-43e4-460e-80ae-b7c3b8774033",
+				"73017965-b16c-4c6e-9ec1-1e1272594648",
+				"28a212cc-51eb-4e17-95e1-2baa65e55b16",
+			}, false,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		permissions, err := P.GetPermissionsByEntityID(tc.EntityID, tc.AppID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		found := 0
+		for i := range permissions {
+			for j := range tc.Expected {
+				if permissions[i].ID == tc.Expected[j] {
+					found++
+				}
+			}
+		}
+		if found != len(tc.Expected) {
+			t.Errorf("Expected %d permissions got %d", len(tc.Expected), found)
+		}
+	}
+}
+
 func TestGetRolesByEntityID(t *testing.T) {
 	var cases = []struct {
 		EntityID string
