@@ -89,7 +89,7 @@ func handleCreateRole(P *Permissionist) http.HandlerFunc {
 
 func handleGetRole(P *Permissionist) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		role, err := P.GetRoleByID(mux.Vars(r)["roleID"], mux.Vars(r)["appID"])
+		role, err := P.GetRoleByID(mux.Vars(r)["roleID"])
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)

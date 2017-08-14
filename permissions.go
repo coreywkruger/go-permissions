@@ -156,7 +156,7 @@ func (permissions *Permissionist) GetPermissionsByEntityID(entityID string, appI
 	return perms, nil
 }
 
-// GetPermissionsByRole returns a list of all permissions that belong to an entity
+// GetPermissionsByRoleID returns a list of all permissions that belong to an entity
 func (permissions *Permissionist) GetPermissionsByRoleID(roleID string) ([]Permission, error) {
 	var perms []Permission
 	err := permissions.DB.Select(&perms, `
@@ -191,14 +191,13 @@ func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
 }
 
 // GetRoleByID returns a role name
-func (permissions *Permissionist) GetRoleByID(roleID string, appID string) (Role, error) {
+func (permissions *Permissionist) GetRoleByID(roleID string) (Role, error) {
 	var role Role
 	err := permissions.DB.Select(&role, `
 	SELECT *
 	FROM roles
-	WHERE id = $1
-		AND app_id = $2 limit 1;
-	`, roleID, appID)
+	WHERE id = $1;
+	`, roleID)
 
 	if err != nil {
 		return role, errors.Wrap(err, "Could not get role")

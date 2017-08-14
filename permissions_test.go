@@ -310,6 +310,8 @@ func TestCreatePermissions(t *testing.T) {
 			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", []string{"one", "two"}, []string{"one", "two"}, false,
 		}, {
 			"bad app id", []string{"one", "two"}, []string{}, true,
+		}, {
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", []string{"read", "write"}, []string{}, true,
 		},
 	}
 
@@ -377,6 +379,8 @@ func TestCreateRoles(t *testing.T) {
 			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", []string{"one", "two"}, []string{"one", "two"}, false,
 		}, {
 			"bad app id", []string{"one", "two"}, []string{}, true,
+		}, {
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", []string{"admin", "customer"}, []string{}, true,
 		},
 	}
 
