@@ -105,9 +105,11 @@ func (permissions *Permissionist) GetAppsByEntityID(entityID string) ([]App, err
 	err := permissions.DB.Select(&apps, `
 	SELECT a.id, a.name
 	FROM apps AS a
+	INNER JOIN entity_roles AS er
+		ON er.entity_id = $1
 	INNER JOIN roles AS r
-		ON a.id = r.app_id
-			AND r.id = $1;
+		ON r.app_id = a.id
+			AND r.id = er.role_id;
 	`, entityID)
 
 	if err != nil {
@@ -203,6 +205,24 @@ func (permissions *Permissionist) GetRoleByID(roleID string, appID string) (Role
 	}
 
 	return role, nil
+}
+
+// GetRolesByEntityID returns roles by entity_id
+func (permissions *Permissionist) GetRolesByEntityID(entityID string) ([]Role, error) {
+	var roles []Role
+	err := permissions.DB.Select(&roles, `
+	SELECT r.id, r.name, r.app_id
+	FROM roles AS r
+	INNER JOIN entity_roles AS er
+		ON r.id = er.role_id
+			AND er.entity_id = $1;
+	`, entityID)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "Could not get role")
+	}
+
+	return roles, nil
 }
 
 // AssignRoleToEntity assigns role roleID to entity entityID
