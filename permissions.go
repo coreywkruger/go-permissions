@@ -258,8 +258,8 @@ func (permissions *Permissionist) CreateApp(name string) (App, error) {
 	var app App
 	err := permissions.DB.QueryRow(`
 	INSERT INTO apps (id, name) VALUES (
-		$1, '$2'
-	) RETURNING *;
+		$1, $2
+	) RETURNING id, name;
 	`, uuid.NewV4().String(), name).Scan(&app.ID, &app.Name)
 
 	if err != nil {

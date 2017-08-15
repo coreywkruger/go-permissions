@@ -113,6 +113,35 @@ func TestRoleIsAllowed(t *testing.T) {
 	}
 }
 
+func TestCreateApp(t *testing.T) {
+	var cases = []struct {
+		Name     string
+		Expected string
+		IsErr    bool
+	}{
+		{
+			"Taco App 3000", "Taco App 3000", false,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		newApp, err := P.CreateApp(tc.Name)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		if newApp.Name != tc.Expected {
+			t.Errorf("Expected app named %s got %s", tc.Expected, newApp.Name)
+		}
+	}
+}
+
 func TestGetApps(t *testing.T) {
 	var cases = []struct {
 		Expected []string
