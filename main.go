@@ -32,7 +32,7 @@ func handleCreateApp(P *Permissionist) http.HandlerFunc {
 
 func handleGetApp(P *Permissionist) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		appID, err := P.GetApp(mux.Vars(r)["appID"])
+		app, err := P.GetApp(mux.Vars(r)["appID"])
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
@@ -40,7 +40,7 @@ func handleGetApp(P *Permissionist) http.HandlerFunc {
 			return
 		}
 		w.WriteHeader(200)
-		w.Write([]byte(appID))
+		w.Write([]byte(app.ID))
 	})
 }
 

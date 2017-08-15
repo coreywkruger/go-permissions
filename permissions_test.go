@@ -142,6 +142,35 @@ func TestCreateApp(t *testing.T) {
 	}
 }
 
+func TestGetApp(t *testing.T) {
+	var cases = []struct {
+		AppID    string
+		Expected string
+		IsErr    bool
+	}{
+		{
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", false,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		app, err := P.GetApp(tc.AppID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		if app.ID != tc.Expected {
+			t.Errorf("Expected app %s got %s", tc.Expected, app.ID)
+		}
+	}
+}
+
 func TestGetApps(t *testing.T) {
 	var cases = []struct {
 		Expected []string

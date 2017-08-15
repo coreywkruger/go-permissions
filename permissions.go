@@ -120,18 +120,19 @@ func (permissions *Permissionist) GetAppsByEntityID(entityID string) ([]App, err
 }
 
 // GetApp returns an app by id
-func (permissions *Permissionist) GetApp(appID string) (string, error) {
-	var id string
-	err := permissions.DB.Select(&id, `
-	SELECT id
+func (permissions *Permissionist) GetApp(appID string) (App, error) {
+	var app App
+	err := permissions.DB.Get(&app, `
+	SELECT id, name
 	FROM apps
 	WHERE id = $1;
 	`, appID)
+
 	if err != nil {
-		return "", errors.Wrap(err, "Could not get app")
+		return app, errors.Wrap(err, "Could not get app")
 	}
 
-	return id, nil
+	return app, nil
 }
 
 // GetPermissionsByEntityID returns a list of all permissions that belong to an entity
