@@ -220,6 +220,35 @@ func TestGetPermissionsByEntityID(t *testing.T) {
 	}
 }
 
+func TestGetRoleByID(t *testing.T) {
+	var cases = []struct {
+		RoleID   string
+		Expected string
+		IsErr    bool
+	}{
+		{
+			"c51003fc-2ae4-4296-9d5e-325c76a40316", "admin", false,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		role, err := P.GetRoleByID(tc.RoleID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		if role.Name != tc.Expected {
+			t.Errorf("Expected role named %s but got %s", tc.Expected, role.Name)
+		}
+	}
+}
+
 func TestGetRolesByEntityID(t *testing.T) {
 	var cases = []struct {
 		EntityID string

@@ -192,8 +192,8 @@ func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
 // GetRoleByID returns a role name
 func (permissions *Permissionist) GetRoleByID(roleID string) (Role, error) {
 	var role Role
-	err := permissions.DB.Select(&role, `
-	SELECT *
+	err := permissions.DB.Get(&role, `
+	SELECT id, name, app_id
 	FROM roles
 	WHERE id = $1;
 	`, roleID)
