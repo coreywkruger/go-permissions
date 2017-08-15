@@ -46,7 +46,7 @@ func handleGetApp(P *Permissionist) http.HandlerFunc {
 
 func handleGetRoles(P *Permissionist) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		permissionNames, err := P.GetRoles(mux.Vars(r)["appID"])
+		permissionNames, err := P.GetRolesByAppID(mux.Vars(r)["appID"])
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)

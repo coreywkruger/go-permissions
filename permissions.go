@@ -173,8 +173,8 @@ func (permissions *Permissionist) GetPermissionsByRoleID(roleID string) ([]Permi
 	return perms, nil
 }
 
-// GetRoles returns a list of all roles created for an app
-func (permissions *Permissionist) GetRoles(appID string) ([]Role, error) {
+// GetRolesByAppID returns a list of all roles created for an app
+func (permissions *Permissionist) GetRolesByAppID(appID string) ([]Role, error) {
 	roles := []Role{}
 	err := permissions.DB.Select(&roles, `
 	SELECT *
