@@ -410,6 +410,41 @@ func TestAssignRoleToEntity(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateRole(t *testing.T) {
+	var cases = []struct {
+		AppID    string
+		Role     string
+		Expected string
+		IsErr    bool
+	}{
+		{
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "one", "one", false,
+		}, {
+			"bad app id", "one", "", true,
+		}, {
+			"697d78cb-b56d-41ad-a7a3-e2e08ebb09fb", "admin", "", true,
+		},
+	}
+
+	for _, tc := range cases {
+		config := testConfig()
+		db := testDb(config.GetString("database"))
+		testCleanup(db)
+		testMigrate(db)
+
+		P := Permissionist{db}
+
+		newRole, err := P.CreateRole(tc.Role, tc.AppID)
+		if (err != nil) != tc.IsErr {
+			t.Errorf("Unexpected error response [%v]", err)
+		}
+		if newRole.Name != tc.Expected {
+			t.Errorf("Expected permission name of '%s' got '%s'", tc.Expected, newRole.Name)
+		}
+	}
+}
+
 func TestCreateRoles(t *testing.T) {
 	var cases = []struct {
 		AppID    string

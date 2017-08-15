@@ -319,7 +319,7 @@ func (permissions *Permissionist) CreateRole(roleName string, appID string) (Rol
 	err := permissions.DB.QueryRow(`
 	INSERT INTO roles (id, name, app_id) VALUES (
 		$1, $2, $3
-	) RETURNING *;
+	) RETURNING id, name, app_id;
 	`, uuid.NewV4().String(), roleName, appID).Scan(&role.ID, &role.Name, &role.AppID)
 
 	if err != nil {
