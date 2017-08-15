@@ -104,7 +104,6 @@ func TestRoleIsAllowed(t *testing.T) {
 
 		allowed, err := P.RoleIsAllowed(tc.RoleID, tc.PermissionID)
 		if (err != nil) != tc.IsErr {
-			log.Println(tc.Expected)
 			t.Errorf("Unexpected error response [%v]", err)
 		}
 		if allowed != tc.Expected {
