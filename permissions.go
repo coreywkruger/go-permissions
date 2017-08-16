@@ -225,7 +225,7 @@ func (permissions *Permissionist) GetRolesByEntityID(entityID string) ([]Role, e
 	return roles, nil
 }
 
-// AssignRoleToEntity assigns role roleID to entity entityID
+// AssignRoleToEntity assigns role to entity
 func (permissions *Permissionist) AssignRoleToEntity(entityID string, roleID string) error {
 	_, err := permissions.DB.Exec(`
 	INSERT INTO entity_roles AS er (id, entity_id, role_id) VALUES (
@@ -240,8 +240,23 @@ func (permissions *Permissionist) AssignRoleToEntity(entityID string, roleID str
 	return nil
 }
 
-// GrantPermissionToRole assigns permission of permissionID to role roleID
-func (permissions *Permissionist) GrantPermissionToRole(roleID string, permissionID string) error {
+// UnassignRoleFromEntity unassigns role from entity
+func (permissions *Permissionist) UnassignRoleFromEntity(entityID string, roleID string) error {
+	_, err := permissions.DB.Exec(`
+	DELETE FROM entity_roles 
+	WHERE entity_id = $1 
+	AND role_id = $2;
+	`, entityID, roleID)
+
+	if err != nil {
+		return errors.Wrap(err, "Could not unassign role from entity")
+	}
+
+	return nil
+}
+
+// AssignPermissionToRole assigns permission to role
+func (permissions *Permissionist) AssignPermissionToRole(roleID string, permissionID string) error {
 	_, err := permissions.DB.Exec(`
 	INSERT INTO role_permissions (id, role_id, permission_id) VALUES (
 		$1, $2, $3
@@ -250,6 +265,21 @@ func (permissions *Permissionist) GrantPermissionToRole(roleID string, permissio
 
 	if err != nil {
 		return errors.Wrap(err, "Could not assign permission to role")
+	}
+
+	return nil
+}
+
+// UnassignPermissionFromRole unassigns permission from role
+func (permissions *Permissionist) UnassignPermissionFromRole(roleID string, permissionID string) error {
+	_, err := permissions.DB.Exec(`
+	DELETE FROM roles_permissions 
+	WHERE role_id = $1 
+	AND permission_id = $2;
+	`, roleID, permissionID)
+
+	if err != nil {
+		return errors.Wrap(err, "Could not unassign permission from role")
 	}
 
 	return nil
@@ -269,6 +299,19 @@ func (permissions *Permissionist) CreateApp(name string) (App, error) {
 	}
 
 	return app, nil
+}
+
+// RemoveApp removes an app and all cascading records
+func (permissions *Permissionist) RemoveApp(appID string) error {
+	_, err := permissions.DB.Exec(`
+	DELETE FROM apps WHERE id = $1;
+	`, appID)
+
+	if err != nil {
+		return errors.Wrap(err, "Could not delete app")
+	}
+
+	return nil
 }
 
 // CreatePermission creates a new permission in the database
@@ -315,6 +358,19 @@ func (permissions *Permissionist) CreatePermissions(permissionNames []string, ap
 	return newPermissions, nil
 }
 
+// RemovePermission removes a role and all cascading records
+func (permissions *Permissionist) RemovePermission(permissionID string) error {
+	_, err := permissions.DB.Exec(`
+	DELETE FROM permissions WHERE id = $1;
+	`, permissionID)
+
+	if err != nil {
+		return errors.Wrap(err, "Could not delete permission")
+	}
+
+	return nil
+}
+
 // CreateRole creates a new role in the database
 func (permissions *Permissionist) CreateRole(roleName string, appID string) (Role, error) {
 	var role Role
@@ -351,4 +407,17 @@ func (permissions *Permissionist) CreateRoles(roleNames []string, appID string) 
 	}
 
 	return newRoles, nil
+}
+
+// RemoveRole removes a role and all cascading records
+func (permissions *Permissionist) RemoveRole(roleID string) error {
+	_, err := permissions.DB.Exec(`
+	DELETE FROM roles WHERE id = $1;
+	`, roleID)
+
+	if err != nil {
+		return errors.Wrap(err, "Could not delete role")
+	}
+
+	return nil
 }

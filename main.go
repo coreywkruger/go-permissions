@@ -151,9 +151,9 @@ func handleCreatePermission(P *Permissionist) http.HandlerFunc {
 	})
 }
 
-func handleGrantPermissionToRole(P *Permissionist) http.HandlerFunc {
+func handleAssignPermissionToRole(P *Permissionist) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		err := P.GrantPermissionToRole(mux.Vars(r)["roleID"], mux.Vars(r)["permissionID"])
+		err := P.AssignPermissionToRole(mux.Vars(r)["roleID"], mux.Vars(r)["permissionID"])
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
@@ -191,7 +191,7 @@ func main() {
 	router.HandleFunc("/apps/{appID}/roles", handleGetRoles(&P)).Methods("GET")
 	router.HandleFunc("/apps/{appID}/roles", handleCreateRole(&P)).Methods("POST")
 	router.HandleFunc("/roles/{roleID}/permissions", handleGetPermissionsByRoleID(&P)).Methods("GET")
-	router.HandleFunc("/roles/{roleID}/permissions/{permissionID}", handleGrantPermissionToRole(&P)).Methods("POST")
+	router.HandleFunc("/roles/{roleID}/permissions/{permissionID}", handleAssignPermissionToRole(&P)).Methods("POST")
 	router.HandleFunc("/permissions", handleCreatePermission(&P)).Methods("POST")
 	http.ListenAndServe(":8000", router)
 }

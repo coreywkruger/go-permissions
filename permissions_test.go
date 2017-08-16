@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestGrantPermissionToRole(t *testing.T) {
+func TestAssignPermissionToRole(t *testing.T) {
 	var cases = []struct {
 		RoleID       string
 		PermissionID string
@@ -28,7 +28,7 @@ func TestGrantPermissionToRole(t *testing.T) {
 
 		P := Permissionist{db}
 
-		err := P.GrantPermissionToRole(tc.RoleID, tc.PermissionID)
+		err := P.AssignPermissionToRole(tc.RoleID, tc.PermissionID)
 		if (err != nil) != tc.IsErr {
 			t.Errorf("Unexpected error response [%v]", err)
 		}
